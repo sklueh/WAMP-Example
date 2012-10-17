@@ -1,0 +1,130 @@
+<html>
+	<head>
+   		<link id="google_webfont_1" rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Open+Sans" />
+   		<style type="text/css">body {font-family: 'Open Sans', arial, serif;} #draggable { width: 150px; height: 100px; padding: 0.5em; background: grey; position: absolute; left: 8; top: 405px;}</style>
+	    <link rel="stylesheet" href="css/jquery-ui-1.9.0.custom.min.css" />
+	</head>
+	<body>
+	   <h2>WebSocket Application Messaging Protocol - Beispielimplementierung</h2>
+	   <table>
+	   	<tr>
+	   		<td><b>An Topic "msg" anmelden / abmelden:</b></td>
+	   		<td colspan="2"><button id="btnSubscribeToggle" style="width: 100%;background-color:lightgreen;">Anmelden</button></td>
+	   	</tr>
+	   	<tr>
+	   		<td><b>Nachricht an Topic "msg" senden:</b></td>
+	   		<td> <input type="text" id="msg1" style="width: 100%;" name="txt_msg1" value="Dies ist ein Test!" /></td>
+	   		<td><button onclick="publishEvent();" style="width: 100px;">Senden</button></td>
+	   	</tr>
+	   	<tr>
+	   		<td><b>Ausrechnen (RPC):</b></td>
+	   		<td><input type="text" id="val1" name="txt_val1" value="3" /> + <input type="text" id="val2" name="txt_val2" value="7" /></td>
+	   		<td><button style="width: 100px;" onclick="calc();">Ausrechnen</button></td>
+	   	</tr>
+	   </table>
+	   <br/><b>Ausgabe:</b><br/>
+	   <textarea id="output" rows="10" cols="90"></textarea>
+	   <br/><b>Draggable-Element:</b>
+	   <div id="draggable" class="ui-widget-content">
+	    <p>Bewegt sich bei allen verbundenen Clients synchron.</p>
+	   </div>
+	</body>
+	<script src="js/autobahn.js"></script>
+	<script src="js/jquery-1.8.2.min.js"></script>
+	<script src="js/jquery-ui-1.9.0.custom.min.js"></script>
+	<script>
+	
+	var sess; // WAMP-Session-Objekt
+	var output = $('#output');
+	var button_input = $('button, input');
+	var btnSubscribeToggle = $('#btnSubscribeToggle');
+	var draggable = $('#draggable');
+	var msg1 = $('#msg1');
+	var val1 = $('#val1');
+	var val2 = $('#val2');
+	
+	window.onload = function() 
+	{	
+	   button_input.attr('disabled', '');	 
+	   ab.connect("ws://localhost:8000", // Verbindung herstellen...  
+	   
+			function (session) // WAMP-Session erzeugt 
+			{
+			   sess = session; //WAMP-Session-Objekt speichern
+			   sess.subscribe('http://localhost/move', onEvent);
+			   output.val("Verbindung zum Server wurde hergestellt!\n"+output.val());
+			   button_input.removeAttr('disabled');
+			   session.prefix("App", "http://localhost/Test#"); // Präfix für Aufrufe festlegen
+			},
+			 
+			function (code, reason) // WAMP-Session beendet!
+			{
+				output.val("Verbindung zum Server wurde getrennt!\n"+output.val());
+				button_input.attr('disabled', '');
+			});
+	   
+	   	btnSubscribeToggle.toggle(
+		  
+		  function()
+		  {
+		    sess.subscribe('http://localhost/msg', onEvent); // Event Abonnieren - Ruft die Callback-Funktion onEvent auf, sobald ein Event ausgelöst wurde.
+		    btnSubscribeToggle.html("Abmelden").css("background-color", "red");
+		  },
+		  
+		  function()
+		  {
+		    sess.unsubscribe('http://localhost/msg'); //Event Abonnierung aufheben
+		    btnSubscribeToggle.html("Anmelden").css("background-color", "lightgreen");
+		  });
+		
+		draggable.draggable(
+		{
+			start: function(event, ui) 
+			{ 
+				sess.unsubscribe('http://localhost/move', onEvent); //Vom Topic Abmelden, solange das DIV bewegt wird.
+			},
+			
+			stop: function(event, ui) 
+			{ 
+				sess.subscribe('http://localhost/move', onEvent); //Wieder beim Topic Anmelden, wenn das DIV losgelassen wird.
+			},
+		
+			drag: function(event, ui) 
+			{ 
+			    var position = $(this).offset();
+		        sess.publish("http://localhost/move", {left: position.left, top: position.top}); //Sendet die aktuelle Position an alle am Topic angemeldeten Clients
+			}
+	   });
+	};
+	
+	function calc()
+	{
+		sess.call("App:add", val1.val(), val2.val()).then( // Führt einen Remote Procedure Call aus
+	 
+	    function (res) // Wenn eine Antwort empfangen wurde
+	    {  
+	    	output.val("Ergebnis: "+res.result+"\n"+output.val()); // Anzeigen der Rückgabe
+	    });
+	}
+	
+	function publishEvent()
+	{
+		output.val("Nachricht wurde an das Topic \"msg\" versendet\n"+output.val());
+		sess.publish("http://localhost/msg", {data: msg1.val()}); //Nachricht versenden
+	}
+	
+	function onEvent(topicUri, event) // Wird aufgerufen, sobald ein Event ausgelöst wurde 
+	{
+		switch (topicUri) 
+		{
+			case "http://localhost/msg":
+				output.val("Event - Topic: "+topicUri+" Daten: "+event.data+"\n"+output.val()); //Nachricht anzeigen
+			break;
+			
+			case "http://localhost/move":
+				draggable.css({'top': event.top, 'left' : event.left}) //Draggable-Element verschieben
+			break;
+		}
+	}
+	</script>
+</html>
