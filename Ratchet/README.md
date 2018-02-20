@@ -1,17 +1,17 @@
-#Ratchet
+# Ratchet
 
 [![Build Status](https://secure.travis-ci.org/cboden/Ratchet.png?branch=master)](http://travis-ci.org/cboden/Ratchet)
 
 A PHP 5.3 library for asynchronously serving WebSockets.
 Build up your application through simple interfaces and re-use your application without changing any of its code just by combining different components. 
 
-##WebSocket Compliance
+## WebSocket Compliance
 
 * Supports the RFC6455, HyBi-10+, and Hixie76 protocol versions (at the same time)
 * Tested on Chrome 13 - 21, Firefox 6 - 16, Safari 5.0.1 - 6.0, iOS 4.2, iOS 5
 * Ratchet [passes](http://socketo.me/reports/ab/) the [Autobahn Testsuite](http://autobahn.ws/testsuite) (non-binary messages)
 
-##Requirements
+## Requirements
 
 Shell access is required and a dedicated machine with root access is recommended.
 To avoid proxy/firewall blockage it's recommended WebSockets are run on port 80, which requires root access.
@@ -32,7 +32,7 @@ Need help?  Have a question?  Want to provide feedback?  Write a message on the 
 
 ---
 
-###A quick server example
+### A quick server example
 
 ```php
 <?php
